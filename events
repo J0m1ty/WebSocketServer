@@ -1,3 +1,0 @@
-FROM SERVER
-
-__auth:userToken,event:setToken,callback:callbackToken__

@@ -11,7 +11,7 @@ import { log } from './log';
 // express app
 const app = express();
 
-// the HTTP server
+// the HTTPS server
 const port: number = 8443;
 const server = createServer({
     cert: readFileSync('/etc/letsencrypt/live/jomity.net/cert.pem', 'utf8'),

@@ -3,8 +3,12 @@ import { nanoid } from 'nanoid';
 import { networkInterfaces } from 'os';
 
 // local dependencies
-import { Token, AuthToken, CallbackToken, StrongToken } from './token';
+import { Token, CallbackToken, AuthToken, StrongToken } from './token';
+import config from './config.json';
 
+/**
+ * Get the local IP address of the server
+ * */
 export const getAddress = (): string => {
     const nets = networkInterfaces();
     const results = Object.create(null);
@@ -21,9 +25,12 @@ export const getAddress = (): string => {
         }
     }
 
-    return results?.['eth0']?.[0];
+    return results?.[config.connection.interface]?.[0];
 }
 
+/**
+ * Generate tokens of specific lengths
+ * */
 export class TokenGenerator {
     static callback(): CallbackToken {
         return Token(nanoid(5), 5);

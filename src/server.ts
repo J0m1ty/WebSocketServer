@@ -4,49 +4,7 @@ import { User } from './user';
 import { log } from './log';
 import { TokenGenerator } from './utils';
 import { Token, AuthToken, CallbackToken } from './token';
-
-// what do we need to send
-const OutgoingEvents = ['ack', 'init'];
-const IncomingEvents = ['ack'];
-
-type OutgoingEvent = typeof OutgoingEvents[number];
-type IncomingEvent = typeof IncomingEvents[number];
-
-interface ISignal {
-    auth: AuthToken;
-    ack: boolean;
-    callback?: CallbackToken;
-    event: IncomingEvent | OutgoingEvent;
-    data?: any;
-}
-
-class IncomingSingal implements ISignal {
-    auth: AuthToken;
-    ack: boolean;
-    callback?: CallbackToken;
-    event: IncomingEvent;
-    data?: any;
-
-    constructor(user: User) {
-        this.auth = user.token;
-        this.ack = false;
-        this.event = 'ack';
-    }
-}
-
-class OutgoingSignal implements ISignal {
-    auth: AuthToken;
-    ack: boolean;
-    callback?: CallbackToken;
-    event: OutgoingEvent;
-    data?: any;
-
-    constructor(user: User) {
-        this.auth = user.token;
-        this.ack = false;
-        this.event = 'ack';
-    }
-}
+import { SignalGenerator } from './signal';
 
 ws.on("connection", async (client, req) => {
     log.conn(`Client connected from ${req.socket.remoteAddress?.replace('::ffff:', '')}`);

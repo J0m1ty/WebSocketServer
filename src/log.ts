@@ -1,7 +1,10 @@
 // 3rd party dependencies
 import { appendFileSync, readFileSync, writeFileSync } from 'fs';
 
-const logPath = "/home/websocket/server/logs/";
+// local dependencies
+import config from './config.json';
+
+const logPath = config.log.path;
 
 enum LogLevel {
     DEBUG,
@@ -96,4 +99,7 @@ class Logger implements ILogger {
     }
 }
 
-export const log = new Logger({states: [true, true, true, true, true, true], maxLines: 100});
+/**
+ * The Logger instance
+ * */
+export const log = new Logger({states: [config.log.levels.debug, config.log.levels.server, config.log.levels.conn, config.log.levels.info, config.log.levels.warn, config.log.levels.error], maxLines: config.log.maxLines});

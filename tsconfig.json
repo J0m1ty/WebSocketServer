@@ -4,6 +4,7 @@
           "ES2022",
           "ES2021.String"
         ],
-        "esModuleInterop": true
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
     }
 }

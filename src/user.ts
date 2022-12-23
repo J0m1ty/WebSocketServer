@@ -2,20 +2,23 @@
 import { db } from './database';
 import { AuthToken } from './token';
 
-export type Connection = {
+type Connection = {
     connected: boolean;
     init: boolean;
 };
 
-export type UserInfo = {
+type UserInfo = {
     connection: Connection,
 };
 
-export interface IUser {
+interface IUser {
     token: AuthToken;
     info: UserInfo;
 }
 
+/**
+ * A data structure that represents a user
+ * */
 export class User implements IUser {
     token: AuthToken;
     info: UserInfo;
@@ -42,6 +45,9 @@ export class User implements IUser {
                 return user;
             }
         }
+        else {
+            await db.set<User[]>('users', []);
+        }
         return null;
     }
     
@@ -51,9 +57,12 @@ export class User implements IUser {
             const index = users.findIndex(u => u.token === user.token);
             if (index !== -1) {
                 users[index] = user;
-                await db.set('users', users);
+                await db.set<User[]>('users', users);
                 return;
             }
+        }
+        else {
+            await db.set<User[]>('users', [user]);
         }
     }
 }

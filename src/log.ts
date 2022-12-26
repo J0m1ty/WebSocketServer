@@ -42,28 +42,40 @@ class Logger implements ILogger {
         this.maxLines = options.maxLines ?? 100;
     }
 
-    debug(message: string): void {
-        this.output(LogLevel.DEBUG, message);
+    debug(...message: (string|number)[]): void {
+        let result = message.map((m) => m.toString());
+
+        this.output(LogLevel.DEBUG, result.join(', '));
     }
 
-    server(message: string): void {
-        this.output(LogLevel.SERVER, message);
+    server(...message: (string|number)[]): void {
+        let result = message.map((m) => m.toString());
+
+        this.output(LogLevel.SERVER, result.join(', '));
     }
 
-    conn(message: string): void {
-        this.output(LogLevel.CONN, message);
+    conn(...message: (string|number)[]): void {
+        let result = message.map((m) => m.toString());
+
+        this.output(LogLevel.CONN, result.join(', '));
     }
 
-    info(message: string): void {
-        this.output(LogLevel.INFO, message);
+    info(...message: (string|number)[]): void {
+        let result = message.map((m) => m.toString());
+
+        this.output(LogLevel.INFO, result.join(', '));
     }
 
-    warn(message: string): void {
-        this.output(LogLevel.WARN, message);
+    warn(...message: (string|number)[]): void {
+        let result = message.map((m) => m.toString());
+
+        this.output(LogLevel.WARN, result.join(', '));
     }
 
-    error(message: string): void {
-        this.output(LogLevel.ERROR, message);
+    error(...message: (string|number)[]): void {
+        let result = message.map((m) => m.toString());
+
+        this.output(LogLevel.ERROR, result.join(', '));
     }
 
     private output(level: LogLevel, message: string): void {

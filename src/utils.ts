@@ -1,10 +1,13 @@
 // 3rd party dependencies
 import { nanoid } from 'nanoid';
 import { networkInterfaces } from 'os';
+import { WebSocket } from 'ws';
+import { QuickDB } from 'quick.db';
 
 // local dependencies
 import { Token, CallbackToken, AuthToken, StrongToken } from './token';
 import config from './config.json';
+import { User } from './user';
 
 /**
  * Get the local IP address of the server
@@ -43,4 +46,12 @@ export class TokenGenerator {
     static strong(): StrongToken {
         return Token(nanoid(21), 21);
     }
+}
+
+/**
+ * WebSocket client with references to the user and database
+ * */
+export class ClientReferences {
+    user?: User;
+    db?: QuickDB;
 }

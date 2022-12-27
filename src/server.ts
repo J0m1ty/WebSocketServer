@@ -2,66 +2,167 @@
 import { ws } from './connection';
 import { User } from './user';
 import { log } from './log';
-import { TokenGenerator, ClientReferences } from './utils';
-import { EventConverter } from './events';
+import { TokenGenerator } from './utils';
 
-import { IncomingEvent, OutgoingEvent, EventName, BaseEvent } from './event';
 import { AcknowledgmentManager } from './acknowledger';
-import { AuthToken, CallbackToken } from './token';
-import { IValidatableProperties, ValidatableEvent } from './verifier';
 
 const am = new AcknowledgmentManager(2500, () => {
     log.error("HANDLE TIMEOUT");
 });
 
 // testing below
-class IncomingAckEvent implements IncomingEvent {
-    type: "in" = "in";
-    name: "ack" = "ack";
+type EventDirection = 'in' | 'out';
 
-    payload: {
-        data: {callbackToken: CallbackToken};
-        ackToken: CallbackToken;
-        authToken: AuthToken;
-    }
-    
-    format: IValidatableProperties = {callbackToken:{type:"string", minLength: 5, maxLength: 5}};
+type EventDataPropertyType = "number" | "integer" | "string" | "boolean" | "array" | "null" | "object";
 
-    constructor(callbackToken: CallbackToken) {
-        this.payload = {
-            data: {callbackToken: callbackToken},
-            ackToken: TokenGenerator.callback(),
-            authToken: TokenGenerator.auth()
+type EventDataProperty = {
+    type: EventDataPropertyType;
+    nullable?: boolean;
+    required?: boolean;
+}
+
+type EventDataStringProperty = EventDataProperty & {
+    type: "string";
+    minLength?: number;
+    maxLength?: number;
+}
+
+type EventDataNumberProperty = EventDataProperty & {
+    type: "number";
+    minimum?: number;
+    maximum?: number;
+}
+
+type EventDataFormat = {
+    [key: string]: EventDataProperty | EventDataStringProperty | EventDataNumberProperty;
+}
+
+type EventInfo = {
+    direction: EventDirection;
+    name: string;
+    format: EventDataFormat;
+}
+
+class Event {
+    info: EventInfo;
+    subscriptions: ((data: any) => void)[] = [];
+    validate: any;
+
+    constructor(info: EventInfo) {
+        this.info = info;
+
+        const schema = {
+            type: "object",
+            properties: {},
+            required: [] as string[],
+            additionalProperties: false
+        };
+
+        Object.entries(this.info.format).forEach(([key, value]) => {
+            if (value.required) {
+                schema.required.push(key);
+                delete value.required;
+            }
+
+            schema.properties[key] = value;
+        });
+
+        try {
+            this.validate = ajv.compile(schema);
         }
+        catch (e) {
+            log.error(`Failed to compile event format for ${this.info.name}`);
+            throw e;
+        }
+    }
+
+    subscribe(response: (data: any) => void) {
+        this.subscriptions.push(response);
     }
 }
 
-const myEvent = new IncomingAckEvent(TokenGenerator.callback());
+import Ajv from "ajv";
+import { AuthToken } from './token';
+const ajv = new Ajv();
 
-const stringy = EventConverter.stringify(myEvent);
-console.log(stringy);
+class EventManager {
+    private events: {
+        in: Event[];
+        out: Event[];
+    } = {
+        in: [],
+        out: []
+    };
 
-const back = EventConverter.parse(stringy);
-console.log(back);
-
-if (back) {
-    if (back.type == "in") {
-        // use back.name as an IncomingEventName to get repsective event
-        const respectiveEvent = new IncomingAckEvent(TokenGenerator.callback());
-        
-        const validator = new ValidatableEvent(back.name, respectiveEvent.format, false);
-
-        if (validator.validate(back.payload.data)) {
-            const data = back.payload.data as typeof respectiveEvent.payload.data;
-    
-            // now can safely get data results
-            console.log(data.callbackToken);
-        }
-        else {
-            log.error(validator.validate.errors.map((e, i) => `#${i + 1}: data ${e.message}`).join('\n'));
+    addEvent(event: Event): Event | undefined {
+        if (!this.getEventNames(event.info.direction).includes(event.info.name)) {
+            this.events[event.info.direction].push(event);
+            return event;
         }
     }
+
+    removeEvnet(event: Event) {
+        this.events[event.info.direction] = this.events[event.info.direction].filter((e: Event) => e.info.name !== event.info.name);
+    }
+
+    getEvent(direction: EventDirection, name: string): Event | undefined {
+        return this.events[direction].find((event: Event) => event.info.name === name);
+    }
+
+    getEventNames(direction: EventDirection) {
+        return this.events[direction].map((event: Event) => event.info.name);
+    }
+
+    subscribe(name: string, response: (data: any) => void) {
+        const event = this.getEvent('in', name);
+        if (event) {
+            event.subscriptions.push(response);
+        }
+    }
+
+    run(name: string, data: any = null): boolean {
+        const event = this.getEvent('in', name);
+        if (event) {
+            if (event.validate(data)) {
+                event.subscriptions.forEach((sub: (data: any) => void) => sub(data));
+                return true;
+            }
+            else {
+                log.error(event.validate.errors.map((e) => `data ${e.message}`).join('\n'));
+            }
+        }
+        return false;
+    }
 }
+
+const eventManager = new EventManager();
+
+eventManager.addEvent(new Event({
+    direction: 'in',
+    name: 'ack',
+    format: {
+        ackToken: {
+            type: 'string',
+            minLength: 5,
+            maxLength: 5,
+            required: true
+        },
+        authToken: {
+            type: 'string',
+            minLength: 11,
+            maxLength: 11,
+            required: true
+        }
+    }
+}));
+
+eventManager.subscribe('ack', (data: any) => {
+    log.info(`Received ack for token ${data.ackToken}`);
+});
+
+eventManager.run('ack', {ackToken: '12345'});
+eventManager.run('ack', {ackToken: '123456'});
+eventManager.run('ack', {whaaaa: '12345'});
 
 ws.on("connection", async (client, req) => {
     log.conn(`Client connected from ${req.socket.remoteAddress?.replace('::ffff:', '')}`);
@@ -82,25 +183,8 @@ ws.on("connection", async (client, req) => {
         user.info.connection.init = false;
         await User.saveUser(user);
 
-        log.info(`Sending token to user...`);
-        // const callbackToken = am.create();
-
-        // const newEvent: OutgoingEvent = {
-        //     type: 'out',
-        //     name: 'init',
-        //     payload: {
-        //         data: {token: user.token},
-        //         format: {token: {type: "string", minLength: 11, maxLength: 11}},
-        //         ackToken: callbackToken,
-        //     }
-        // };
-
-        // const result = EventConverter.stringify(newEvent);
-
-        // if (result) {
-        //     client.send(result);
-        //     log.debug(`Sent token...`);
-        // }
+        log.info(`Sending token to user`);
+        const callbackToken = am.create();
     }
 
     client.on("message", (data, isBinary) => {

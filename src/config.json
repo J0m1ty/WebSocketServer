@@ -1,9 +1,9 @@
 {
     "database": {
-        "path": "/Users/jomity/Documents/GitHub/WebSocketServer/database/db.sqlite"
+        "path": "/home/websocket/server/database/db.sqlite"
     },
     "log": {
-        "path": "/Users/jomity/Documents/GitHub/WebSocketServer/logs/",
+        "path": "/home/websocket/server/logs/",
         "maxLines": 200,
         "levels": {
             "debug": true,
@@ -19,6 +19,6 @@
         "secure": false,
         "cert": "/etc/letsencrypt/live/jomity.net/cert.pem",
         "privkey": "/etc/letsencrypt/live/jomity.net/privkey.pem",
-        "interface": "en0"
+        "interface": "eth0"
     }
 }

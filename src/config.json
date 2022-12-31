@@ -1,9 +1,9 @@
 {
     "database": {
-        "path": "/home/websocket/server/database/db.sqlite"
+        "path": "../database/db.sqlite"
     },
     "log": {
-        "path": "/home/websocket/server/logs/",
+        "path": "../logs/",
         "maxLines": 200,
         "levels": {
             "debug": true,
@@ -16,7 +16,7 @@
     },
     "connection": {
         "port": 8443,
-        "secure": false,
+        "secure": true,
         "cert": "/etc/letsencrypt/live/jomity.net/cert.pem",
         "privkey": "/etc/letsencrypt/live/jomity.net/privkey.pem",
         "interface": "eth0"

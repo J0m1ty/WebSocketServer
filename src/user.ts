@@ -9,10 +9,10 @@ type Connection = {
 
 type UserInfo = {
     connection: Connection,
+    token: AuthToken;
 };
 
 interface IUser {
-    token: AuthToken;
     info: UserInfo;
 }
 
@@ -20,27 +20,22 @@ interface IUser {
  * A data structure that represents a user
  * */
 export class User implements IUser {
-    token: AuthToken;
     info: UserInfo;
 
     constructor(token: AuthToken) {
-        this.token = token;
         this.info = {
+            token: token,
             connection: {
                 connected: false,
                 init: false
             }
         }
     }
-    
-    toJSON(): string {
-        return JSON.stringify(this);
-    }
 
     static async fetchUser(token: string): Promise<User | null> {
         const users = await db.get<User[]>('users');
         if (users) {
-            const user = users.find(user => user.token === token);
+            const user = users.find(user => user.info.token === token);
             if (user) {
                 return user;
             }
@@ -54,7 +49,7 @@ export class User implements IUser {
     static async saveUser(user: User): Promise<void> {
         const users = await db.get<User[]>('users');
         if (users) {
-            const index = users.findIndex(u => u.token === user.token);
+            const index = users.findIndex(u => u.info.token === user.info.token);
             if (index !== -1) {
                 users[index] = user;
                 await db.set<User[]>('users', users);

@@ -1,10 +1,11 @@
 // 3rd party dependencies
 import { appendFileSync, readFileSync, writeFileSync } from 'fs';
+import path from 'path';
 
 // local dependencies
 import config from './config.json';
 
-const logPath = config.log.path;
+const logPath = path.join(__dirname, config.log.path);
 
 enum LogLevel {
     DEBUG,

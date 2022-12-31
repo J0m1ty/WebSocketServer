@@ -47,11 +47,3 @@ export class TokenGenerator {
         return Token(nanoid(21), 21);
     }
 }
-
-/**
- * WebSocket client with references to the user and database
- * */
-export class ClientReferences {
-    user?: User;
-    db?: QuickDB;
-}

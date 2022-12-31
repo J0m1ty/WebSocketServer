@@ -2,24 +2,7 @@
 import { log } from './log';
 import { CallbackToken } from './token';
 import { TokenGenerator } from './utils';
-
-/**
- * Creates a cancelable timeout
- * */
-export const delay = (ms: number, value: unknown, { signal }) => {
-    return new Promise((resolve, reject) => {
-        const listener = () => {
-            clearTimeout(timer);
-            reject(signal.reason);
-        };
-        signal?.throwIfAborted();
-        const timer = setTimeout(() => {
-            signal?.removeEventListener('abort', listener);
-            resolve(value);
-        }, ms);
-        signal?.addEventListener('abort', listener);
-    });
-}
+import { setTimeout } from 'timers/promises';
 
 /**
  * Waits a specified time for an acknowledgement, either succeeding quietly or calling a fail handler
@@ -43,9 +26,10 @@ export class Acknowledgment {
 
         (async () => {
             this.state = 'waiting';
-
-            await delay(this.ms, null, { signal: this.ac.signal }).then(() => this.manager?.fail?.()).catch(e => {
+            
+            await setTimeout(this.ms, null, { signal: this.ac.signal }).then(() => this.manager?.fail?.()).catch(e => {
                 log.debug("ACKNOWLEDGED");
+                console.log(e);
             }).finally(() => {
                 this.state = 'done';
                 this.manager?.delete(this);

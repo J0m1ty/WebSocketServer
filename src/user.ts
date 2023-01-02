@@ -1,19 +1,23 @@
 // local dependencies
 import { db } from './database';
+import { Room } from './room';
 import { AuthToken } from './token';
+
+type UserInfo = {
+    token: AuthToken;
+    username: string;
+    color: string;
+};
 
 type Connection = {
     connected: boolean;
     init: boolean;
 };
 
-type UserInfo = {
-    connection: Connection,
-    token: AuthToken;
-};
-
 interface IUser {
     info: UserInfo;
+    connection: Connection;
+    room?: Room;
 }
 
 /**
@@ -21,43 +25,37 @@ interface IUser {
  * */
 export class User implements IUser {
     info: UserInfo;
+    connection: Connection;
+    room?: Room;
 
-    constructor(token: AuthToken) {
+    constructor(info: Partial<UserInfo> & { token: AuthToken }) {
         this.info = {
-            token: token,
-            connection: {
-                connected: false,
-                init: false
-            }
-        }
+            token: info.token,
+            username: info.username ?? '',
+            color: info.color ?? ''
+        };
+        this.connection = {
+            connected: false,
+            init: false
+        };
+        this.room = null;
     }
 
-    static async fetchUser(token: string): Promise<User | null> {
-        const users = await db.get<User[]>('users');
-        if (users) {
-            const user = users.find(user => user.info.token === token);
-            if (user) {
-                return user;
-            }
-        }
-        else {
-            await db.set<User[]>('users', []);
-        }
-        return null;
+    static async fetchUser(token: string): Promise<UserInfo | null> {
+        const users = await db.get<UserInfo[]>('users');
+        const user = users.find(info => info.token === token);
+        return user || null;
     }
     
     static async saveUser(user: User): Promise<void> {
-        const users = await db.get<User[]>('users');
-        if (users) {
-            const index = users.findIndex(u => u.info.token === user.info.token);
-            if (index !== -1) {
-                users[index] = user;
-                await db.set<User[]>('users', users);
-                return;
-            }
+        const users = await db.get<UserInfo[]>('users');
+        const index = users.findIndex(info => info.token === user.info.token);
+        if (index !== -1) {
+            users[index] = user.info;
         }
         else {
-            await db.set<User[]>('users', [user]);
+            users.push(user.info);
         }
+        await db.set('users', users);
     }
 }

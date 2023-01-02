@@ -7,6 +7,7 @@ import fs from 'fs';
 import { AuthToken } from './token';
 import { User } from './user';
 import { log } from './log';
+import { AcknowledgmentManager } from './acknowledger';
 
 const ajv = new Ajv();
 
@@ -45,7 +46,7 @@ type ResponseOther = {
     name: string;
     auth?: AuthToken;
 };
-type Response = (data: any, other: ResponseOther, socket: WebSocket, db: QuickDB, user: User) => void;
+type Response = (data: any, other: ResponseOther, socket: WebSocket, db: QuickDB, user: User, am: AcknowledgmentManager) => void;
 
 export class Event {
     info: EventInfo;
@@ -145,7 +146,7 @@ export class EventManager {
         }
     }
 
-    receive(name: string, raw: string, socket: WebSocket, db: QuickDB, user: User) {
+    receive(name: string, raw: string, socket: WebSocket, db: QuickDB, user: User, am: AcknowledgmentManager) {
         const event = this.getEvent('in', name);
         if (event) {
             const data = event.parse(raw);
@@ -154,7 +155,7 @@ export class EventManager {
                 log.warn(event.parse.message);
             }
             else {
-                event.subscriptions.forEach((sub: Response) => sub(data.data, {direction: 'in', name: data.name, auth: data.auth}, socket, db, user));
+                event.subscriptions.forEach((sub: Response) => sub(data.data, {direction: 'in', name: data.name, auth: data.auth}, socket, db, user, am));
                 this.info.received++;
                 this.info.total++;
             }
@@ -197,20 +198,21 @@ export const eventManager = new EventManager();
 (async () => {
     const eventPath = path.join(__dirname, 'events');
 
-    const getAllFiles = (dir: string): string[] =>
-        fs.readdirSync(dir).reduce((files, file) => {
-            const filePath = path.join(dir, file);
-            const stat = fs.statSync(filePath);
-        if (stat.isDirectory()) {
-            return [...files, ...getAllFiles(filePath)];
-        }
-        if (stat.isFile() && file.endsWith('.ts')) {
-            return [...files, filePath];
-        }
-        return files;
-    }, []);
+    const commandFiles: string[] = [];
 
-    const commandFiles = getAllFiles(eventPath);
+    const getFilesRecursively = (dir: string)=> {
+        const filesInDirectory = fs.readdirSync(dir);
+        for (const file of filesInDirectory) {
+            const absolute = path.join(dir, file);
+            if (fs.statSync(absolute).isDirectory()) {
+                getFilesRecursively(absolute);
+            } else {
+                commandFiles.push(absolute);
+            }
+        }
+    };
+    
+    getFilesRecursively(eventPath);
 
     for (const file of commandFiles) {
         await import(file).then(event => {eventManager.addEvent(event.default)}).catch((e) => log.error(e));

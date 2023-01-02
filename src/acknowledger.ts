@@ -1,8 +1,9 @@
 // local dependencies
 import { log } from './log';
-import { CallbackToken } from './token';
+import { AckToken } from './token';
 import { TokenGenerator } from './utils';
 import { setTimeout } from 'timers/promises';
+import { User } from './user';
 
 /**
  * Waits a specified time for an acknowledgement, either succeeding quietly or calling a fail handler
@@ -11,11 +12,11 @@ export class Acknowledgment {
     state: 'pending' | 'waiting' | 'done' = 'pending';
     ac: AbortController = new AbortController();
 
-    token: CallbackToken;
+    token: AckToken;
     ms: number;
     manager?: AcknowledgmentManager;
 
-    constructor(init: {ms: number, token: CallbackToken, manager?: AcknowledgmentManager}) {
+    constructor(init: {ms: number, token: AckToken, manager?: AcknowledgmentManager}) {
         this.ms = init.ms;
         this.token = init.token;
         this.manager = init.manager;
@@ -59,15 +60,15 @@ export class AcknowledgmentManager {
         this.fail = fail;
     }
 
-    create(): CallbackToken {
-        const newToken = TokenGenerator.callback();
+    create(user: User): AckToken {
+        const newToken = TokenGenerator.ack();
         const at = new Acknowledgment({ms: this.timeout, token: newToken, manager: this});
         this.acks.add(at);
         at.start();
         return newToken;
     }
 
-    resolve(token: CallbackToken): boolean {
+    resolve(token: AckToken): boolean {
         let found = Array.from(this.acks).find(t => t.token == token);
         if (found) {
             found.acknowledge();

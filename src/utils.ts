@@ -5,7 +5,7 @@ import { WebSocket } from 'ws';
 import { QuickDB } from 'quick.db';
 
 // local dependencies
-import { Token, CallbackToken, AuthToken, StrongToken } from './token';
+import { Token, AckToken, AuthToken, StrongToken, RoomToken } from './token';
 import config from './config.json';
 import { User } from './user';
 
@@ -35,8 +35,12 @@ export const getAddress = (): string => {
  * Generate tokens of specific lengths
  * */
 export class TokenGenerator {
-    static callback(): CallbackToken {
+    static ack(): AckToken {
         return Token(nanoid(5), 5);
+    }
+
+    static room(): RoomToken {
+        return Token(nanoid(8), 8);
     }
 
     static auth(): AuthToken {

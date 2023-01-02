@@ -4,7 +4,8 @@ type PToken<Length> = string & {
 
 const isStringOfLength = <Length extends number>(str: string, len: Length,): str is PToken<Length> => str.trim().length == len;
 
-export type CallbackToken = PToken<5>;
+export type AckToken = PToken<5>;
+export type RoomToken = PToken<8>;
 export type AuthToken = PToken<11>;
 export type StrongToken = PToken<21>;
 
